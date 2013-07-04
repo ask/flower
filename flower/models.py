@@ -9,7 +9,7 @@ class BaseModel(object):
         self.app = app
 
     def __eq__(self, other):
-        raise NotImplementedError
+        return NotImplemented
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -102,9 +102,12 @@ class TaskModel(BaseModel):
 
     @classmethod
     def iter_tasks(cls, app, limit=None, type=None, worker=None, state=None):
-        i = 0
-        events_state = app.events.state
-        for uuid, task in events_state.tasks_by_timestamp():
+        try:
+            tasks_by_time = app.events.state.tasks_by_time
+        except AttributeError:
+            tasks_by_time = app.events.state.tasks_by_timestamp
+
+        for i, (uuid, task) in enumerate(tasks_by_time()):
             if type and task.name != type:
                 continue
             if worker and task.worker.hostname != worker:
@@ -112,7 +115,6 @@ class TaskModel(BaseModel):
             if state and task.state != state:
                 continue
             yield uuid, task
-            i += 1
             if i == limit:
                 break
 
